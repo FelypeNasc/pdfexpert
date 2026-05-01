@@ -1,12 +1,43 @@
 import { ollama } from './ollama';
 import { getVectorStore } from './chroma';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { createStuffDocumentsChain } from 'langchain/chains/combine_documents';
-import { createRetrievalChain } from 'langchain/chains/retrieval';
+import { StringOutputParser } from '@langchain/core/output_parsers';
+import { RunnablePassthrough, RunnableSequence } from '@langchain/core/runnables';
+import type { Document } from '@langchain/core/documents';
+
+export const RPG_SYSTEM_PROMPT = `Você é um especialista em jogos de RPG de mesa, atuando como um consultor e guia para Mestres e Jogadores.
+Seu papel é responder perguntas com base nas regras, mecânicas, lore e sistemas do conteúdo abaixo, que foi extraído de livros, manuais, fichas ou suplementos de RPG.
+
+Use exclusivamente as informações do contexto para fornecer respostas precisas, claras e úteis.
+Se a pergunta não estiver relacionada ao conteúdo, ou se não houver informação suficiente, diga honestamente que não sabe.
+
+Regras:
+- Não faça perguntas sobre o conteúdo que não está no contexto.
+- Explique as regras e mecânicas do sistema de RPG de forma clara e concisa.
+- Forneça exemplos de como aplicar as regras em situações específicas.
+- Não se estenda em detalhes que não estejam relacionados à pergunta.
+- Se a pergunta não está relacionada ao conteúdo, ou se não há informação suficiente, diga honestamente que não sabe.
+
+Contexto do sistema de RPG:
+{context}
+
+Pergunta:
+{input}
+
+Resposta detalhada e precisa:`;
+
+export function buildRawPrompt(context: string, question: string): string {
+  return RPG_SYSTEM_PROMPT
+    .replace('{context}', context)
+    .replace('{input}', question);
+}
+
+function formatDocs(docs: Document[]): string {
+  return docs.map((d) => d.pageContent).join('\n\n');
+}
 
 function sanitizeAnswer(rawAnswer: string, fileName?: string) {
-  // Remove a tag <think> e qualquer conteúdo dentro dela
-  const cleanAnswer = (rawAnswer as string)
+  const cleanAnswer = rawAnswer
     .replace(/<think>[\s\S]*?<\/think>/, '')
     .trim();
 
@@ -21,50 +52,23 @@ function sanitizeAnswer(rawAnswer: string, fileName?: string) {
 
 export async function askQuestion(question: string, collectionName: string) {
   const vectorStore = await getVectorStore(collectionName);
+  const retriever = vectorStore.asRetriever({ k: 5 });
 
-  const retriever = vectorStore.asRetriever({
-    k: 5,
-  });
+  const prompt = ChatPromptTemplate.fromTemplate(RPG_SYSTEM_PROMPT);
 
-  const prompt = ChatPromptTemplate.fromTemplate(
-    `Você é um especialista em jogos de RPG de mesa, atuando como um consultor e guia para Mestres e Jogadores. 
-Seu papel é responder perguntas com base nas regras, mecânicas, lore e sistemas do conteúdo abaixo, que foi extraído de livros, manuais, fichas ou suplementos de RPG.
-
-Use exclusivamente as informações do contexto para fornecer respostas precisas, claras e úteis.
-Se a pergunta não estiver relacionada ao conteúdo, ou se não houver informação suficiente, diga honestamente que não sabe.
-
-Regras: 
-- Não faça perguntas sobre o conteúdo que não está no contexto.
-- Explique as regras e mecânicas do sistema de RPG de forma clara e concisa.
-- Forneça exemplos de como aplicar as regras em situações específicas.
-- Não se estenda em detalhes que não estejam relacionados à pergunta.
-- Se a pergunta não está relacionada ao conteúdo, ou se não há informação suficiente, diga honestamente que não sabe.
-
-Contexto do sistema de RPG:
-{context}
-
-Pergunta:
-{input}
-
-Resposta detalhada e precisa:`
-  );
-
-  const combineDocsChain = await createStuffDocumentsChain({
-    llm: ollama,
+  const chain = RunnableSequence.from([
+    {
+      context: retriever.pipe(formatDocs),
+      input: new RunnablePassthrough(),
+    },
     prompt,
-  });
-
-  const retrievalChain = await createRetrievalChain({
-    retriever,
-    combineDocsChain,
-  });
+    ollama,
+    new StringOutputParser(),
+  ]);
 
   try {
-    const response = await retrievalChain.invoke({
-      input: question,
-    });
-
-    return response;
+    const answer = await chain.invoke(question);
+    return { answer };
   } catch (error) {
     console.error('Erro ao executar o askQuestion:', error);
     throw new Error('Erro ao buscar resposta');
@@ -104,16 +108,18 @@ Agora gere um nome para:
 Nome:
 `;
   const rawAnswer = await ollama.invoke(prompt);
-  const answer = sanitizeAnswer(rawAnswer.content as string);
-  return answer;
+  const raw = sanitizeAnswer(rawAnswer.content as string, fileName);
+  // Enforce ChromaDB naming: [a-zA-Z0-9._-], 3-512 chars, start/end alphanumeric
+  const answer = raw
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^[^a-zA-Z0-9]+/, '')
+    .replace(/[^a-zA-Z0-9]+$/, '')
+    .slice(0, 512) || 'colecao';
+  return answer.length >= 3 ? answer : answer.padEnd(3, '0');
 }
 
-export async function generateGreeting(collectionName: string) {
-  const vectorStore = await getVectorStore(collectionName);
-  const retriever = vectorStore.asRetriever({ k: 3 });
-
-  const prompt = ChatPromptTemplate.fromTemplate(
-    `Você é um narrador de RPG, especializado no sistema representado no seguinte contexto.
+const GREETING_PROMPT = `Você é um narrador de RPG, especializado no sistema representado no seguinte contexto.
 
 Sua tarefa é criar uma **saudação breve, imersiva e temática**, como se desse as boas-vindas a um mestre ou jogador que acaba de abrir este livro ou manual.
 
@@ -129,7 +135,7 @@ Sua tarefa é criar uma **saudação breve, imersiva e temática**, como se dess
 - "Precisa de ajuda para criar um personagem?"
 - "Quer entender como funciona um combate?"
 
-Exemplos: 
+Exemplos:
 - Contexto: "Manual de jogador de D&D 5ª edição"
 - Saudação: "Olá, jogador! Vejo que está começando a jogar D&D 5ª edição, estou aqui para te auxiliar no que precisar. Quer saber sobre o combate? Quer detalhes sobre a classe de guerreiro? Ou quer detalhes sobre um monstro específico? Manda aí!"
 
@@ -137,22 +143,24 @@ Exemplos:
 {context}
 
 Saudação:
-`
-  );
+`;
 
-  const combineDocsChain = await createStuffDocumentsChain({
-    llm: ollama,
+export async function generateGreeting(collectionName: string) {
+  const vectorStore = await getVectorStore(collectionName);
+  const retriever = vectorStore.asRetriever({ k: 3 });
+
+  const prompt = ChatPromptTemplate.fromTemplate(GREETING_PROMPT);
+
+  const chain = RunnableSequence.from([
+    {
+      context: retriever.pipe(formatDocs),
+      input: new RunnablePassthrough(),
+    },
     prompt,
-  });
+    ollama,
+    new StringOutputParser(),
+  ]);
 
-  const retrievalChain = await createRetrievalChain({
-    retriever,
-    combineDocsChain,
-  });
-
-  const response = await retrievalChain.invoke({ input: 'gerar saudação' });
-
-  const greeting = sanitizeAnswer(response.answer);
-
-  return greeting;
+  const raw = await chain.invoke('gerar saudação');
+  return sanitizeAnswer(raw);
 }

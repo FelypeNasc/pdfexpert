@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const answer = await askQuestion(question, collectionName);
+  const { answer } = await askQuestion(question, collectionName);
 
   return NextResponse.json({ answer });
 }

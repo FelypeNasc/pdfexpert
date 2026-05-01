@@ -1,9 +1,9 @@
 import { ChromaClient } from 'chromadb';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OllamaEmbeddings } from '@langchain/ollama';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
-const embeddings = new OllamaEmbeddings({ model: 'qwen3:4b' });
+const embeddings = new OllamaEmbeddings({ model: 'nomic-embed-text' });
 
 const CHROMA_URL = 'http://localhost:8000';
 

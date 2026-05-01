@@ -1,4 +1,4 @@
-import { ChatOllama } from '@langchain/community/chat_models/ollama';
+import { ChatOllama } from '@langchain/ollama';
 
 export const SYSTEM_BASE_MODEL = 'qwen3:4b';
 

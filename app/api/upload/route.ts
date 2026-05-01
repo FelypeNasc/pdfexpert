@@ -15,11 +15,15 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const text = await extractTextFromPDF(buffer);
+    const { text, pageCount } = await extractTextFromPDF(buffer);
 
     const collectionName = await generateCollectionName(file.name, text);
 
-    await createVectorStoreFromText(text, collectionName);
+    await createVectorStoreFromText(text, collectionName, {
+      filename: file.name,
+      pageCount,
+      uploadDate: new Date().toISOString(),
+    });
 
     // Gerar saudação diretamente após criar o vetor
     const greeting = await generateGreeting(collectionName);

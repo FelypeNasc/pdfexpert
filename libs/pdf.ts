@@ -4,9 +4,12 @@ export async function extractTextFromPDF(buffer: Buffer) {
   const blob = new Blob([buffer], { type: "application/pdf" });
 
   const loader = new PDFLoader(blob, {
-    splitPages: false,
+    splitPages: true,
   });
 
   const docs = await loader.load();
-  return docs.map((doc) => doc.pageContent).join("\n");
+  return {
+    text: docs.map((doc) => doc.pageContent).join("\n"),
+    pageCount: docs.length,
+  };
 }

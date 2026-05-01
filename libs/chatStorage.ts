@@ -1,8 +1,15 @@
 const KEY_PREFIX = 'pdfexpert_chat_';
 
-type Message = {
+export type Source = {
+  index: number;
+  content: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type Message = {
   role: 'user' | 'assistant';
   content: string;
+  sources?: Source[];
 };
 
 export function saveMessages(collectionName: string, messages: Message[]): void {

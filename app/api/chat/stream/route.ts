@@ -67,6 +67,16 @@ export async function POST(req: NextRequest) {
         if (clean) controller.enqueue(encoder.encode(clean));
       }
 
+      // Append source documents as JSON after delimiter
+      const sources = docs.map((d, i) => ({
+        index: i + 1,
+        content: d.pageContent,
+        metadata: d.metadata,
+      }));
+      controller.enqueue(
+        encoder.encode(`\n\n<!--SOURCES-->${JSON.stringify(sources)}`)
+      );
+
       controller.close();
     },
   });

@@ -1,118 +1,118 @@
 # PDF Expert
 
-A modern AI-powered PDF document assistant that uses Retrieval-Augmented Generation (RAG) to enable intelligent conversations with your PDF documents. Built with Next.js, LangChain, and Ollama.
+RAG-powered PDF chat app for tabletop RPG rulebooks. Upload PDFs, ask questions, get answers from a local LLM — no cloud, no API keys, fully private.
+
+Built with Next.js 15, Ollama, ChromaDB, and LangChain.
 
 ## Features
 
-- **PDF Processing**: Upload and automatically extract text from PDF files
-- **Intelligent Indexing**: Vector embeddings using ChromaDB for semantic search
-- **AI-Powered Chat**: Ask questions about your documents using local LLMs via Ollama
-- **Multi-Document Support**: Organize and manage multiple document collections
-- **Real-time Conversations**: Stream responses from your local AI model
-- **Collection Management**: Automatically generates collection names and contextual greetings
+- **PDF upload & indexing** — extract text, chunk, and embed into ChromaDB
+- **RAG chat** — ask questions answered by a local LLM using relevant document chunks
+- **Streaming responses** — token-by-token output for real-time feel
+- **Source citations** — see which chunks informed each answer
+- **Source viewer** — click a citation to read the full chunk in a side panel
+- **Chat persistence** — messages saved to localStorage across sessions
+- **Chat export** — download conversations as Markdown
+- **Collection management** — list, select, delete document collections
+- **Collection metadata** — filename, page count, upload date shown in sidebar
+- **Responsive design** — mobile-friendly sidebar with slide-in toggle
+- **Optional auth** — password protection via environment variable
 
-## Tech Stack
+## Prerequisites
 
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **AI/ML**: 
-  - LangChain for RAG orchestration
-  - Ollama for local LLM inference
-  - ChromaDB for vector storage
-  - PDF Parse for document extraction
-- **Styling**: Tailwind CSS, React Markdown
+- [Node.js](https://nodejs.org/) 18+
+- [Ollama](https://ollama.com/) running locally
+- [ChromaDB](https://www.trychroma.com/) running locally
 
-## Getting Started
+### Ollama models
 
-### Prerequisites
+Pull the required models before starting:
 
-- Node.js 18+
-- Ollama installed and running locally
-
-### Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+ollama pull qwen3:0.6b       # chat model
+ollama pull nomic-embed-text  # embedding model
+```
+
+### ChromaDB
+
+Run ChromaDB with Docker:
+
+```bash
+docker run -p 8000:8000 chromadb/chroma
+```
+
+Or install via pip:
+
+```bash
+pip install chromadb && chroma run
+```
+
+## Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/felype-nascimento/pdfexpert.git
 cd pdfexpert
+
+# Install dependencies
+yarn install
+
+# Copy env file and adjust if needed
+cp .env.example .env
+
+# Start dev server
+yarn dev
 ```
 
-2. Install dependencies:
-```bash
-npm install
+Open [http://localhost:3000](http://localhost:3000).
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API URL |
+| `OLLAMA_CHAT_MODEL` | `qwen3:0.6b` | LLM for chat responses |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Model for text embeddings |
+| `OLLAMA_SYSTEM_MODEL` | `qwen3:4b` | Model for system tasks (collection naming) |
+| `CHROMA_URL` | `http://localhost:8000` | ChromaDB server URL |
+| `APP_PASSWORD` | _(empty)_ | Optional password to protect the app. Leave empty to disable auth. |
+
+## Architecture
+
+```
+Upload: PDF -> extract text -> generate collection name (LLM)
+             -> chunk & embed into ChromaDB
+             -> generate greeting (RAG)
+
+Chat:   question + collection -> retrieve top-5 chunks
+             -> stuff into prompt -> stream LLM answer
+             -> append source citations
 ```
 
-3. Ensure Ollama is running:
-```bash
-ollama serve
-```
-
-### Development
-
-Start the development server:
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Build & Production
-
-Build for production:
-```bash
-npm run build
-```
-
-Start the production server:
-```bash
-npm start
-```
-
-## Project Structure
+### Project structure
 
 ```
 app/
-├── api/
-│   ├── chat/         # Chat message handling
-│   ├── collections/  # Collection management
-│   └── upload/       # PDF upload and processing
-├── layout.tsx        # Root layout
-├── page.tsx          # Main chat interface
-└── globals.css       # Global styles
-
+  page.tsx                # Main single-page UI
+  api/
+    upload/route.ts       # PDF processing endpoint
+    chat/stream/route.ts  # Streaming RAG chat
+    collections/          # List & delete collections
+    auth/                 # Login/logout
+  components/             # Toast, TypingSkeleton, SourcePanel
+  login/page.tsx          # Login page
 libs/
-├── chroma.ts         # Vector store operations
-├── ollama.ts         # LLM integration
-├── pdf.ts            # PDF text extraction
-└── rag.ts            # RAG pipeline and prompts
+  pdf.ts                  # PDF text extraction
+  chroma.ts               # ChromaDB operations
+  ollama.ts               # Ollama client config
+  rag.ts                  # RAG chains and prompts
+  chatStorage.ts          # localStorage persistence
 ```
-
-## API Routes
-
-### POST `/api/upload`
-Upload a PDF file for processing.
-- Extracts text from PDF
-- Creates vector embeddings
-- Generates collection name and greeting
-
-### GET `/api/collections`
-Retrieve all available document collections.
-
-### POST `/api/chat`
-Send a message and get a response based on the selected collection.
-
-## How It Works
-
-1. **PDF Upload**: Users select a PDF file through the web interface
-2. **Text Extraction**: The PDF is parsed to extract text content
-3. **Vector Indexing**: Text is split into chunks and embedded using Ollama
-4. **Collection Storage**: Vectors are stored in ChromaDB with a generated collection name
-5. **Smart Chat**: When users ask questions, the system retrieves relevant document chunks and uses the LLM to generate contextual answers
 
 ## Contributing
 
-Feel free to submit issues and enhancement requests!
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
-MIT
+[MIT](LICENSE) - Felype Nascimento

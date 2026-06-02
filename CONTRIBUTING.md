@@ -20,8 +20,7 @@ See [README.md](README.md) for prerequisites and setup instructions.
 
 - Keep PRs focused — one feature or fix per PR
 - Follow existing code style (TypeScript, Tailwind CSS)
-- UI text should be in Portuguese (pt-BR)
-- Test your changes with `yarn build` before submitting
+- UI text should be in english (i18n can be implemented later)
 
 ## Reporting Issues
 

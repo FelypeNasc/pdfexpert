@@ -24,29 +24,6 @@ Built with Next.js 15, Ollama, ChromaDB, and LangChain.
 - [Ollama](https://ollama.com/) running locally
 - [ChromaDB](https://www.trychroma.com/) running locally
 
-### Ollama models
-
-Pull the required models before starting:
-
-```bash
-ollama pull qwen3:0.6b       # chat model
-ollama pull nomic-embed-text  # embedding model
-```
-
-### ChromaDB
-
-Run ChromaDB with Docker:
-
-```bash
-docker run -p 8000:8000 chromadb/chroma
-```
-
-Or install via pip:
-
-```bash
-pip install chromadb && chroma run
-```
-
 ## Setup
 
 ```bash
@@ -60,11 +37,20 @@ yarn install
 # Copy env file and adjust if needed
 cp .env.example .env
 
+# Start Ollama + ChromaDB
+docker compose up -d
+
+# Pull models (first time only)
+docker compose exec ollama ollama pull qwen3:0.6b
+docker compose exec ollama ollama pull nomic-embed-text
+
 # Start dev server
 yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+> **Without Docker:** You can also run [Ollama](https://ollama.com/) and [ChromaDB](https://www.trychroma.com/) natively if preferred. Just ensure they're accessible at the URLs in `.env`.
 
 ## Environment Variables
 

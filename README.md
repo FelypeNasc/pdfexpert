@@ -1,12 +1,12 @@
-# PDF Expert
+# NotebookRAG
 
-RAG-powered PDF chat app for tabletop RPG rulebooks. Upload PDFs, ask questions, get answers from a local LLM — no cloud, no API keys, fully private.
+RAG-powered document chat app. Upload PDFs, Markdown files, Word documents, and plain text to chat with your documents using a local LLM — no cloud, no API keys, fully private.
 
 Built with Next.js 15, Ollama, ChromaDB, and LangChain.
 
 ## Features
 
-- **PDF upload & indexing** — extract text, chunk, and embed into ChromaDB
+- **Multi-format upload & indexing** — PDF, TXT, MD, DOCX — extract text, chunk, and embed into ChromaDB
 - **RAG chat** — ask questions answered by a local LLM using relevant document chunks
 - **Streaming responses** — token-by-token output for real-time feel
 - **Source citations** — see which chunks informed each answer
@@ -66,7 +66,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Architecture
 
 ```
-Upload: PDF -> extract text -> generate collection name (LLM)
+Upload: PDF/TXT/MD/DOCX -> extract text -> generate collection name (LLM)
              -> chunk & embed into ChromaDB
              -> generate greeting (RAG)
 
@@ -81,14 +81,14 @@ Chat:   question + collection -> retrieve top-5 chunks
 app/
   page.tsx                # Main single-page UI
   api/
-    upload/route.ts       # PDF processing endpoint
+    upload/route.ts       # Document processing endpoint (PDF, TXT, MD, DOCX)
     chat/stream/route.ts  # Streaming RAG chat
     collections/          # List & delete collections
     auth/                 # Login/logout
   components/             # Toast, TypingSkeleton, SourcePanel
   login/page.tsx          # Login page
 libs/
-  pdf.ts                  # PDF text extraction
+  pdf.ts                  # Multi-format text extraction (PDF, DOCX, TXT, MD)
   chroma.ts               # ChromaDB operations
   ollama.ts               # Ollama client config
   rag.ts                  # RAG chains and prompts

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractTextFromPDF } from '@/libs/pdf';
+import { extractText } from '@/libs/pdf';
 import { createVectorStoreFromText } from '@/libs/chroma';
 import { generateCollectionName, generateGreeting } from '@/libs/rag';
 
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const { text, pageCount } = await extractTextFromPDF(buffer);
+    const { text, pageCount } = await extractText(buffer, file.name);
 
     const collectionName = await generateCollectionName(file.name, text);
 
@@ -25,18 +25,17 @@ export async function POST(req: NextRequest) {
       uploadDate: new Date().toISOString(),
     });
 
-    // Gerar saudação diretamente após criar o vetor
     const greeting = await generateGreeting(collectionName);
 
     return NextResponse.json({
-      message: 'PDF processed and indexed',
+      message: 'Document processed and indexed',
       collectionName,
       greeting,
     });
   } catch (error) {
-    console.error('Error processing PDF:', error);
+    console.error('Error processing document:', error);
     return NextResponse.json(
-      { error: 'Error processing PDF' },
+      { error: 'Error processing document' },
       { status: 500 }
     );
   }

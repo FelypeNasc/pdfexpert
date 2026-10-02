@@ -48,7 +48,7 @@ export default function Home() {
       saveMessages(activeCollection, messages);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        showToast('Armazenamento local cheio. Histórico não salvo.', 'error');
+        showToast('Local storage full. History not saved.', 'error');
       }
     }
   }, [messages, activeCollection]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -59,12 +59,12 @@ export default function Home() {
       const data = await res.json();
       setCollections(data.collections);
     } catch {
-      showToast('Erro ao carregar coleções. Verifique se o ChromaDB está rodando.', 'error');
+      showToast('Error loading collections. Check ChromaDB is running.', 'error');
     }
   };
 
   const handleDeleteCollection = async (col: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir "${col}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete "${col}"?`)) return;
     try {
       const res = await fetch(`/api/collections/${encodeURIComponent(col)}`, { method: 'DELETE' });
       if (res.ok) {
@@ -74,12 +74,12 @@ export default function Home() {
           setActiveCollection(null);
           setMessages([]);
         }
-        showToast(`Coleção "${col}" excluída.`, 'success');
+        showToast(`Collection "${col}" deleted.`, 'success');
       } else {
-        showToast('Erro ao excluir coleção.', 'error');
+        showToast('Error deleting collection.', 'error');
       }
     } catch {
-      showToast('Erro de conexão ao excluir coleção.', 'error');
+      showToast('Connection error deleting collection.', 'error');
     }
   };
 
@@ -109,10 +109,10 @@ export default function Home() {
 
         setMessages([greeting]);
       } else {
-        showToast('Erro ao processar o PDF. Tente novamente.', 'error');
+        showToast('Error processing file. Please try again.', 'error');
       }
     } catch {
-      showToast('Erro de conexão. Verifique se o Ollama e o ChromaDB estão rodando.', 'error');
+      showToast('Connection error. Check Ollama and ChromaDB are running.', 'error');
     }
 
     setUploading(false);
@@ -179,7 +179,7 @@ export default function Home() {
         }
       }
     } catch {
-      showToast('Erro ao obter resposta. Verifique se o Ollama está rodando.', 'error');
+      showToast('Error getting response. Check Ollama is running.', 'error');
       setLastFailedQuestion(question);
       setLoading(false);
     }
@@ -197,7 +197,7 @@ export default function Home() {
 
     const lines = [
       `# ${activeCollection}`,
-      `_Exportado em ${new Date().toLocaleString('pt-BR')}_`,
+      `_Exported on ${new Date().toLocaleString()}_`,
       '',
       '---',
       '',
@@ -205,12 +205,12 @@ export default function Home() {
 
     for (const msg of messages) {
       if (msg.role === 'user') {
-        lines.push(`**Jogador:** ${msg.content}`);
+        lines.push(`**You:** ${msg.content}`);
       } else {
-        lines.push(`**Mestre:** ${msg.content}`);
+        lines.push(`**Assistant:** ${msg.content}`);
         if (msg.sources?.length) {
           lines.push('');
-          lines.push('<details><summary>Fontes</summary>');
+          lines.push('<details><summary>Sources</summary>');
           lines.push('');
           for (const src of msg.sources) {
             lines.push(`> **[${src.index}]** ${src.content}${src.content.length >= 300 ? '...' : ''}`);
@@ -243,7 +243,7 @@ export default function Home() {
             <div className="w-4 h-4 bg-white rounded-full animate-bounce"></div>
           </div>
           <p className="text-white mt-4">
-            Processando PDF, preparando seus grimórios...
+            Processing document...
           </p>
         </div>
       )}
@@ -263,7 +263,7 @@ export default function Home() {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           md:relative md:translate-x-0`}
       >
-        <h2 className="text-lg font-bold mb-4">Conversas</h2>
+        <h2 className="text-lg font-bold mb-4">Documents</h2>
 
         <div className="flex-1 overflow-y-auto space-y-2">
           {collections.map((col) => (
@@ -279,7 +279,7 @@ export default function Home() {
                 }`}
                 title={
                   col.metadata?.filename
-                    ? `${col.metadata.filename} · ${col.metadata.pageCount ?? '?'} pág · ${col.metadata.uploadDate ? new Date(col.metadata.uploadDate).toLocaleDateString('pt-BR') : ''}`
+                    ? `${col.metadata.filename} · ${col.metadata.pageCount ?? '?'} pg · ${col.metadata.uploadDate ? new Date(col.metadata.uploadDate).toLocaleDateString() : ''}`
                     : col.name
                 }
               >
@@ -293,7 +293,7 @@ export default function Home() {
               <button
                 onClick={() => handleDeleteCollection(col.name)}
                 className="ml-1 p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Excluir coleção"
+                title="Delete collection"
               >
                 ✕
               </button>
@@ -304,7 +304,7 @@ export default function Home() {
         <div className="mt-4">
           <input
             type="file"
-            accept=".pdf"
+            accept=".pdf,.txt,.md,.docx"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
             className="mb-2"
           />
@@ -313,7 +313,7 @@ export default function Home() {
             className="bg-white text-zinc-900 px-3 py-1 rounded w-full font-medium hover:bg-zinc-200 disabled:opacity-50"
             disabled={uploading}
           >
-            Enviar PDF
+            Upload Document
           </button>
         </div>
 
@@ -324,7 +324,7 @@ export default function Home() {
           }}
           className="mt-3 text-xs text-zinc-500 hover:text-zinc-300 text-center w-full"
         >
-          Sair
+          Sign out
         </button>
       </div>
 
@@ -342,7 +342,7 @@ export default function Home() {
             <h1 className="text-xl font-bold truncate">
               {activeCollection
                 ? `Chat: ${activeCollection}`
-                : 'Selecione uma conversa'}
+                : 'Select a document'}
             </h1>
           </div>
           {activeCollection && messages.length > 0 && (
@@ -350,7 +350,7 @@ export default function Home() {
               onClick={handleExport}
               className="text-sm text-zinc-400 hover:text-white whitespace-nowrap"
             >
-              Exportar .md
+              Export .md
             </button>
           )}
         </header>
@@ -379,7 +379,7 @@ export default function Home() {
                   {msg.sources && msg.sources.length > 0 && (
                     <details className="mt-2 border-t border-zinc-300 pt-2">
                       <summary className="text-xs cursor-pointer text-zinc-500 hover:text-zinc-700">
-                        Fontes utilizadas ({msg.sources.length})
+                        Sources ({msg.sources.length})
                       </summary>
                       <div className="mt-1 space-y-1">
                         {msg.sources.map((src) => (
@@ -410,7 +410,7 @@ export default function Home() {
                   onClick={() => sendQuestion(lastFailedQuestion)}
                   className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
                 >
-                  Tentar novamente
+                  Retry
                 </button>
               </div>
             )}
@@ -423,8 +423,8 @@ export default function Home() {
             type="text"
             placeholder={
               activeCollection
-                ? 'Digite sua pergunta...'
-                : 'Selecione uma conversa para começar'
+                ? 'Ask a question...'
+                : 'Select a document to start'
             }
             className="flex-1 border border-zinc-300 rounded-lg px-4 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-zinc-500"
             value={input}
@@ -441,7 +441,7 @@ export default function Home() {
                 : 'bg-zinc-500 text-zinc-300 cursor-not-allowed'
             }`}
           >
-            Enviar
+            Send
           </button>
         </footer>
       </div>
